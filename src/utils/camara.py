@@ -1,4 +1,5 @@
 import pygame
+# clase cámara
 
 class Camera:
     def __init__(self, width, height):
