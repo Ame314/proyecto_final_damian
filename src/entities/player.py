@@ -77,7 +77,7 @@ class Player(pygame.sprite.Sprite):
         if self.rect.bottom > screen_height:  # Límite inferior
             self.on_ground = True
 
-        # Manejo de colisiones
+      # Manejo de colisiones con plataformas y rocas
         self.handle_platform_collisions(platforms)
 
         # Animación
