@@ -5,7 +5,7 @@ class Ninja(pygame.sprite.Sprite):
         super().__init__()
         self.animations = {
             "ninja_walk": self.load_frames(sprite_paths['ninja_walk'], 3),
-            "ninja_jumpfall": self.load_frames(sprite_paths['ninja_jumpfall'], 4),
+            "ninja_jumpfall": self.load_frames(sprite_paths['ninja_jumpfall'], 3),
         }
         self.current_action = "ninja_walk"
         self.current_frame = 0
@@ -25,9 +25,15 @@ class Ninja(pygame.sprite.Sprite):
         sprite_height = sprite_sheet.get_height()
         for i in range(frame_count):
             frame = sprite_sheet.subsurface((i * sprite_width, 0, sprite_width, sprite_height))
-            scaled_frame = pygame.transform.scale(frame, (60, 60))  # Ajusta el tamaño según sea necesario
+            scaled_frame = pygame.transform.scale(frame, (50, 50))  # Ajusta el tamaño según sea necesario
             frames.append(scaled_frame)
         return frames
+
+    def set_action(self, action):
+        if self.current_action != action:
+            self.current_action = action
+            self.current_frame = 0
+            self.animation_timer = 0
 
     def update(self, platforms):
         # Aplicar gravedad
@@ -44,7 +50,8 @@ class Ninja(pygame.sprite.Sprite):
             self.animation_timer = 0
 
         # Actualizar la imagen
-        self.image = self.animations[self.current_action][self.current_frame]
+        current_image = self.animations[self.current_action][self.current_frame]
+        self.image = pygame.transform.flip(current_image, True, False) if not self.facing_right else current_image
 
     def handle_platform_collisions(self, platforms):
         self.on_ground = False
@@ -60,4 +67,18 @@ class Ninja(pygame.sprite.Sprite):
         if self.on_ground:
             self.velocity_y = -15  # Ajusta la fuerza del salto
             self.on_ground = False
-            self.current_action = "ninja_jumpfall"  # Cambiar a la animación de salto
+            self.set_action("ninja_jumpfall")  # Cambiar a la animación de salto
+
+    def move(self, direction):
+        if direction == "right":
+            self.rect.x += 5
+            self.facing_right = True
+        elif direction == "left":
+            self.rect.x -= 5
+            self.facing_right = False
+
+        # Girar la imagen según la dirección
+        if self.facing_right:
+            self.image = self.animations[self.current_action][self.current_frame]
+        else:
+            self.image = pygame.transform.flip(self.animations[self.current_action][self.current_frame], True, False)
