@@ -1,6 +1,6 @@
 import pygame
 from src.entities.player import Player
-from src.scenes.level1 import Level
+from src.scenes.level import Level
 from src.utils.camara import Camera  # Clase Camera
 from src.entities.coin import Coin  # Clase Coin
 from src.entities.heart import Heart  # Clase Heart
@@ -19,7 +19,7 @@ level_width = 2400
 level_height = 800
 
 # Crear la cámara
-camera = Camera(level_width, level_height)
+camera = Camera(level_width, level_height, WIDTH, HEIGHT)
 
 # Crear jugador
 player = Player(100, level_height - 100, {
@@ -48,31 +48,8 @@ for x, y in positions:
     ninja.health = 1
     ninjas.add(ninja)
 
-# Crear el nivel y plataformas
-level = Level()
-
-# Crear el piso
-floor = pygame.sprite.Sprite()
-floor.image = pygame.Surface((level_width, 20))
-floor.image.fill((139, 69, 19))
-floor.rect = floor.image.get_rect(topleft=(0, level_height - 20))
-level.platforms.add(floor)
-
-# Crear plataformas adicionales
-platforms = [
-    (400, level_height - 150, 200, 20),
-    (800, level_height - 300, 200, 20),
-    (1200, level_height - 200, 200, 20),
-    (1600, level_height - 350, 200, 20),
-    (2000, level_height - 150, 200, 20)
-]
-
-for x, y, w, h in platforms:
-    platform = pygame.sprite.Sprite()
-    platform.image = pygame.Surface((w, h))
-    platform.image.fill((0, 128, 0))
-    platform.rect = platform.image.get_rect(topleft=(x, y))
-    level.platforms.add(platform)
+# Crear el nivel con las dimensiones del nivel
+level = Level(level_width, level_height)
 
 # Crear el grupo de monedas
 coin_images = [pygame.transform.scale(pygame.image.load(f'assets/images/coin_frame_{i}.png').convert_alpha(), (30, 30)) for i in range(3)]
@@ -135,8 +112,8 @@ while running:
                 if ninja.health <= 0:
                     ninja.kill()
             elif not player.is_dead and pygame.time.get_ticks() - ninja_hit_time > 1000:
-                player.take_damage()
                 heart_count -= 1
+                player.take_damage()
                 ninja_hit_time = pygame.time.get_ticks()
 
     # Actualizar cámara
@@ -156,15 +133,24 @@ while running:
         heart_collected = True
         heart.kill()
 
-    # Dibujar elementos
-    screen.fill((135, 206, 250))
-    for sprite in level.platforms:
-        screen.blit(sprite.image, camera.apply(sprite))
+    # Dibujar todo en la pantalla
+    screen.fill((135, 206, 250))  # Fondo azul cielo
+
+    # Dibujar plataformas
+    level.draw(screen, camera)
+
+    # Dibujar ninjas
     for sprite in ninjas:
         screen.blit(sprite.image, camera.apply(sprite))
+
+    # Dibujar monedas
     for coin in coins:
         screen.blit(coin.image, camera.apply(coin))
+
+    # Dibujar jugador
     screen.blit(player.image, camera.apply(player))
+
+    # Dibujar corazón si no se ha recogido
     if not heart_collected:
         screen.blit(heart.image, camera.apply(heart))
 

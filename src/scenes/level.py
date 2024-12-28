@@ -2,52 +2,35 @@ import pygame
 from .platform import Platform
 
 class Level:
-    def __init__(self):
+    def __init__(self, level_width, level_height):
+        self.width = level_width
+        self.height = level_height
         self.platforms = pygame.sprite.Group()
-        self.rocas = pygame.sprite.Group()
 
-        # Crear el piso
-        self.crear_piso()
-        # Crear plataformas
-        self.crear_plataformas()
-        # Crear rocas
-        self.crear_rocas()
-
-    def crear_piso(self):
-        # Crear el piso que cubre todo el ancho del nivel
-        piso = Platform(0, 580, 2400, 20, color=(139, 69, 19))  # Color marrón
-        self.platforms.add(piso)
-
-    def crear_plataformas(self):
-        # Definimos las plataformas según la descripción
-        plataformas_data = [
-            (100, 500, 200, 20),  # Plataforma inferior
-            (100, 400, 200, 20),  # Plataforma del medio
-            (100, 300, 200, 20)   # Plataforma superior
+        # Datos de plataformas: (x, y, tipo de plataforma)
+        platform_data = [
+            (100, level_height - 100, 1),  # Plataforma inicial (p1)
+            (400, level_height - 200, 2),  # Plataforma media (p2)
+            (700, level_height - 150, 3),  # Plataforma intermedia (p3)
+            (1000, level_height - 250, 4), # Plataforma alta (p4)
+            (1400, level_height - 100, 5), # Plataforma larga baja (p5)
+            (1800, level_height - 300, 2), # Plataforma alta derecha (p2)
         ]
 
-        for x, y, width, height in plataformas_data:
-            plataforma = Platform(x, y, width, height)
-            self.platforms.add(plataforma)
+        # Crear las plataformas y añadirlas al grupo
+        for x, y, platform_type in platform_data:
+            platform = Platform(x, y, platform_type)
+            self.platforms.add(platform)
 
-    def crear_rocas(self):
-        # Crear rocas grandes
-        rocas_data = [
-            (600, 500, 100, 50),  # Roca grande 1
-            (800, 500, 100, 50),  # Roca grande 2
-            (400, 450, 50, 25)    # Roca pequeña
-        ]
+        # Añadir una plataforma en la parte inferior que cubra todo el ancho
+        bottom_platform = Platform(0, level_height - 20, 5)  # Ajusta la altura según sea necesario
+        bottom_platform.rect.width = level_width  # Asegúrate de que cubra todo el ancho
+        self.platforms.add(bottom_platform)
 
-        for x, y, width, height in rocas_data:
-            roca = Platform(x, y, width, height, color=(169, 169, 169))  # Color gris para las rocas
-            self.rocas.add(roca)
-
-    def draw(self, screen):
-        self.platforms.draw(screen)
-        self.rocas.draw(screen)
+    def draw(self, screen, camera):
+        # Dibuja las plataformas ajustadas a la cámara
+        for platform in self.platforms:
+            screen.blit(platform.image, camera.apply(platform))
 
     def get_platforms(self):
         return self.platforms
-
-    def get_rocas(self):
-        return self.rocas

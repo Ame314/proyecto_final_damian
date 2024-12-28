@@ -8,7 +8,7 @@ class Player(pygame.sprite.Sprite):
             "walk_left": self.load_frames(sprite_paths['walk2'], 3),
             "jumpfall": self.load_frames(sprite_paths['jumpfall'], 3),
             "idle": self.load_frames(sprite_paths['idle'], 4),
-            "attack": self.load_frames(sprite_paths['attack'], 11),
+            "attack": self.load_frames(sprite_paths['attack'], 12),
             "death": self.load_frames(sprite_paths['death'], 9),
         }
         self.current_action = "idle"
@@ -64,30 +64,35 @@ class Player(pygame.sprite.Sprite):
             self.set_action("attack")
 
     def take_damage(self):
-        if not self.is_dead and pygame.time.get_ticks() - self.damage_timer > 1000:
+        if not self.is_dead and pygame.time.get_ticks() - self.damage_timer > 10:
             self.is_dead = True
             self.set_action("death")
             self.damage_timer = pygame.time.get_ticks()
 
     def update(self, keys, platforms, screen_width, screen_height):
+        # Animación de muerte
         if self.is_dead:
             self.animation_timer += self.animation_speed
             if self.animation_timer >= 1:
                 self.current_frame += 1
                 if self.current_frame >= len(self.animations[self.current_action]):
+                    # Finaliza la animación de muerte
                     self.is_dead = False
                     self.set_action("idle")
                 self.animation_timer = 0
 
+        # Animación de ataque
         elif self.is_attacking:
             self.animation_timer += self.animation_speed
             if self.animation_timer >= 1:
                 self.current_frame += 1
                 if self.current_frame >= len(self.animations[self.current_action]):
+                    # Finaliza la animación de ataque
                     self.is_attacking = False
                     self.set_action("idle")
                 self.animation_timer = 0
 
+        # Movimiento normal
         else:
             # Movimiento horizontal
             if keys[pygame.K_LEFT]:
@@ -107,7 +112,7 @@ class Player(pygame.sprite.Sprite):
                 self.jump()
 
             # Ataque
-            if keys[pygame.K_SPACE]:
+            if keys[pygame.K_SPACE] and not self.is_attacking:
                 self.attack()
 
         # Aplicar gravedad
