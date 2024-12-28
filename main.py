@@ -1,6 +1,10 @@
 import pygame
-from src.entities.player import Player
+from src.scenes.login import LoginScreen
+from src.scenes.menu import MenuScreen
 from src.scenes.level import Level
+from src.scenes.level2 import Level2
+from src.scenes.level3 import Level3
+from src.entities.player import Player
 from src.utils.camara import Camera
 
 # Inicializar Pygame
@@ -10,6 +14,14 @@ pygame.init()
 WIDTH, HEIGHT = 800, 600
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Juego de Plataformas")
+
+# Pantalla de inicio de sesión
+#login_screen = LoginScreen(screen)
+#login_screen.run()
+
+# Pantalla de menú
+menu_screen = MenuScreen(screen)
+selected_level = menu_screen.run()
 
 # Dimensiones del nivel
 level_width = 2400
@@ -28,12 +40,18 @@ player = Player(100, level_height - 100, {
     'death': 'assets/images/death.png'
 })
 
-# Crear el nivel con las dimensiones del nivel y las rutas de los sprites de los ninjas
+# Crear el nivel seleccionado
 ninja_sprite_paths = {
     'ninja_walk': 'assets/images/ninja_walk.png',
     'ninja_jumpfall': 'assets/images/ninja_jumpfall.png'
 }
-level = Level(level_width, level_height, ninja_sprite_paths)
+
+if selected_level == 1:
+    level = Level(level_width, level_height, ninja_sprite_paths)
+elif selected_level == 2:
+    level = Level2(level_width, level_height, ninja_sprite_paths)
+elif selected_level == 3:
+    level = Level3(level_width, level_height, ninja_sprite_paths)
 
 # Inicializar contadores
 coin_count = 0
