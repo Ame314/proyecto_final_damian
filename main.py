@@ -1,10 +1,7 @@
 import pygame
 from src.entities.player import Player
 from src.scenes.level import Level
-from src.utils.camara import Camera  # Clase Camera
-from src.entities.coin import Coin  # Clase Coin
-from src.entities.heart import Heart  # Clase Heart
-from src.entities.ninja import Ninja  # Clase Ninja
+from src.utils.camara import Camera
 
 # Inicializar Pygame
 pygame.init()
@@ -31,36 +28,12 @@ player = Player(100, level_height - 100, {
     'death': 'assets/images/death.png'
 })
 
-# Crear ninjas con diferentes posiciones
+# Crear el nivel con las dimensiones del nivel y las rutas de los sprites de los ninjas
 ninja_sprite_paths = {
     'ninja_walk': 'assets/images/ninja_walk.png',
     'ninja_jumpfall': 'assets/images/ninja_jumpfall.png'
 }
-ninjas = pygame.sprite.Group()
-positions = [
-    (100, level_height - 80),
-    (800, level_height - 320),
-    (1500, level_height - 400)
-]
-
-for x, y in positions:
-    ninja = Ninja(x, y, ninja_sprite_paths)
-    ninja.health = 1
-    ninjas.add(ninja)
-
-# Crear el nivel con las dimensiones del nivel
-level = Level(level_width, level_height)
-
-# Crear el grupo de monedas
-coin_images = [pygame.transform.scale(pygame.image.load(f'assets/images/coin_frame_{i}.png').convert_alpha(), (30, 30)) for i in range(3)]
-coins = pygame.sprite.Group()
-for i in range(8):
-    coin = Coin(300 + i * 100, level_height - 200, coin_images)
-    coins.add(coin)
-
-# Crear el corazón
-heart_images = [pygame.transform.scale(pygame.image.load(f'assets/images/heart_frame_{i}.png').convert_alpha(), (30, 30)) for i in range(3)]
-heart = Heart(1000, level_height - 400, heart_images)
+level = Level(level_width, level_height, ninja_sprite_paths)
 
 # Inicializar contadores
 coin_count = 0
@@ -82,7 +55,7 @@ while running:
     if keys[pygame.K_LEFT] or keys[pygame.K_RIGHT]:
         player.set_action("walk_left" if keys[pygame.K_LEFT] else "walk_right")
     else:
-        if not player.is_attacking and not player.is_dead:  # Priorizar otras acciones
+        if not player.is_attacking and not player.is_dead:
             player.set_action("idle")
 
     if keys[pygame.K_SPACE]:
@@ -92,7 +65,7 @@ while running:
     player.update(keys, level.get_platforms(), WIDTH, HEIGHT)
 
     # Lógica del movimiento del Ninja
-    for ninja in ninjas:
+    for ninja in level.ninjas:
         ninja.update(level.get_platforms())
 
         # Cambiar dirección en los límites
@@ -108,9 +81,7 @@ while running:
         # Colisión entre jugador y ninja
         if pygame.sprite.collide_rect(player, ninja):
             if player.is_attacking:
-                ninja.health -= 1
-                if ninja.health <= 0:
-                    ninja.kill()
+                ninja.take_damage()  # Llama al método para reducir la salud
             elif not player.is_dead and pygame.time.get_ticks() - ninja_hit_time > 1000:
                 heart_count -= 1
                 player.take_damage()
@@ -119,19 +90,19 @@ while running:
     # Actualizar cámara
     camera.update(player, WIDTH, HEIGHT)
 
-    # Actualizar monedas y corazón
-    coins.update(pygame.time.get_ticks())
-    heart.update(pygame.time.get_ticks())
+    # Actualizar monedas y corazones
+    level.coins.update(pygame.time.get_ticks())
+    level.hearts.update(pygame.time.get_ticks())
 
     # Colisión jugador-monedas
-    collected_coins = pygame.sprite.spritecollide(player, coins, True)
+    collected_coins = pygame.sprite.spritecollide(player, level.coins, True)
     coin_count += len(collected_coins)
 
     # Colisión jugador-corazón
-    if pygame.sprite.collide_rect(player, heart) and not heart_collected:
-        heart_count += 1
-        heart_collected = True
-        heart.kill()
+    for heart in level.hearts:
+        if pygame.sprite.collide_rect(player, heart):
+            heart_count += 1
+            heart.kill()  # Eliminar el corazón del juego
 
     # Dibujar todo en la pantalla
     screen.fill((135, 206, 250))  # Fondo azul cielo
@@ -139,19 +110,15 @@ while running:
     # Dibujar plataformas
     level.draw(screen, camera)
 
-    # Dibujar ninjas
-    for sprite in ninjas:
-        screen.blit(sprite.image, camera.apply(sprite))
-
     # Dibujar monedas
-    for coin in coins:
+    for coin in level.coins:
         screen.blit(coin.image, camera.apply(coin))
 
     # Dibujar jugador
     screen.blit(player.image, camera.apply(player))
 
-    # Dibujar corazón si no se ha recogido
-    if not heart_collected:
+    # Dibujar corazones
+    for heart in level.hearts:
         screen.blit(heart.image, camera.apply(heart))
 
     # Dibujar contadores

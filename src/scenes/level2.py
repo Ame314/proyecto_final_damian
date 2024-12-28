@@ -4,7 +4,7 @@ from src.entities.ninja import Ninja
 from src.entities.heart import Heart
 from src.entities.coin import Coin
 
-class Level:
+class Level2:
     def __init__(self, level_width, level_height, ninja_sprite_paths):
         self.width = level_width
         self.height = level_height
@@ -17,10 +17,10 @@ class Level:
         platform_data = [
             (100, level_height - 100, 1),
             (400, level_height - 200, 2),
-            (700, level_height - 150, 3),
-            (1000, level_height - 250, 4),
-            (1400, level_height - 100, 5),
-            (1800, level_height - 300, 2),
+            (800, level_height - 150, 3),
+            (1200, level_height - 250, 4),
+            (1600, level_height - 100, 5),
+            (2000, level_height - 300, 2),
         ]
 
         # Crear las plataformas y añadirlas al grupo
@@ -28,31 +28,26 @@ class Level:
             platform = Platform(x, y, platform_type)
             self.platforms.add(platform)
 
-        # Añadir una plataforma en la parte inferior que cubra todo el ancho
-        bottom_platform = Platform(0, level_height - 20, 5)
-        bottom_platform.rect.width = level_width
-        self.platforms.add(bottom_platform)
-
         # Crear ninjas, corazones y monedas
         self.create_ninjas(ninja_sprite_paths)
         self.create_hearts()
         self.create_coins()
 
     def create_ninjas(self, sprite_paths):
-        ninja_positions = [(200, self.height - 120), (600, self.height - 220)]
+        ninja_positions = [(200, self.height - 120), (600, self.height - 220), (1000, self.height - 150)]
         for pos in ninja_positions:
             ninja = Ninja(pos[0], pos[1], sprite_paths)
             self.ninjas.add(ninja)
 
     def create_hearts(self):
-        heart_positions = [(300, self.height - 150), (800, self.height - 250)]
+        heart_positions = [(300, self.height - 150), (1200, self.height - 250)]
         heart_images = [pygame.transform.scale(pygame.image.load(f'assets/images/heart_frame_{i}.png').convert_alpha(), (30, 30)) for i in range(3)]
         for pos in heart_positions:
             heart = Heart(pos[0], pos[1], heart_images)
             self.hearts.add(heart)
 
     def create_coins(self):
-        coin_positions = [(150, self.height - 180), (900, self.height - 280)]
+        coin_positions = [(150, self.height - 180), (900, self.height - 280), (1700, self.height - 220)]
         coin_images = [pygame.transform.scale(pygame.image.load(f'assets/images/coin_frame_{i}.png').convert_alpha(), (30, 30)) for i in range(3)]
         for pos in coin_positions:
             coin = Coin(pos[0], pos[1], coin_images)

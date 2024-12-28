@@ -12,11 +12,13 @@ class Ninja(pygame.sprite.Sprite):
         self.animation_speed = 0.1
         self.animation_timer = 0
         self.facing_right = True
+        self.velocity_y = 0
+        self.on_ground = False
+        self.move_speed = 5  # Velocidad de movimiento
+        self.health = 3  # Salud del ninja
 
         self.image = self.animations[self.current_action][self.current_frame]
         self.rect = self.image.get_rect(topleft=(x, y))
-        self.velocity_y = 0
-        self.on_ground = False
 
     def load_frames(self, sprite_sheet_path, frame_count):
         sprite_sheet = pygame.image.load(sprite_sheet_path).convert_alpha()
@@ -43,6 +45,10 @@ class Ninja(pygame.sprite.Sprite):
         # Manejo de colisiones con plataformas
         self.handle_platform_collisions(platforms)
 
+        # Actualizar animación
+        self.update_animation()
+
+    def update_animation(self):
         # Animación
         self.animation_timer += self.animation_speed
         if self.animation_timer >= 1:
@@ -71,11 +77,24 @@ class Ninja(pygame.sprite.Sprite):
 
     def move(self, direction):
         if direction == "right":
-            self.rect.x += 5
+            self.rect.x += self.move_speed
             self.facing_right = True
         elif direction == "left":
-            self.rect.x -= 5
+            self.rect.x -= self.move_speed
             self.facing_right = False
 
         # Actualizar la acción a caminar mientras se mueve
         self.set_action("ninja_walk")
+
+    def take_damage(self):
+        """Método para reducir la salud del ninja."""
+        self.health -= 1
+        if self.health <= 0:
+            self.kill()  # Eliminar el ninja si la salud llega a 0
+
+    def is_dead(self):
+        """Verifica si el ninja está muerto."""
+        return self.health <= 0
+
+    def set_animation_speed(self, speed):
+        self.animation_speed = speed  # Cambia la velocidad de la animación
