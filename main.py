@@ -26,7 +26,9 @@ player = Player(100, level_height - 100, {
     'walk': 'assets/images/walk.png',
     'walk2': 'assets/images/walk2.png',
     'jumpfall': 'assets/images/jumpfall.png',
-    'idle': 'assets/images/idle.png'
+    'idle': 'assets/images/idle.png',
+    'attack': 'assets/images/attack.png',
+    'death': 'assets/images/death.png'
 })
 
 # Crear ninjas con diferentes posiciones
@@ -36,14 +38,14 @@ ninja_sprite_paths = {
 }
 ninjas = pygame.sprite.Group()
 positions = [
-    (100, level_height - 80),  # En el suelo
-    (800, level_height - 320),  # En la plataforma intermedia
-    (1500, level_height - 400)  # En la plataforma más alta
+    (100, level_height - 80),
+    (800, level_height - 320),
+    (1500, level_height - 400)
 ]
 
 for x, y in positions:
     ninja = Ninja(x, y, ninja_sprite_paths)
-    ninja.health = 1  # Agregar atributo de salud para cada ninja
+    ninja.health = 1
     ninjas.add(ninja)
 
 # Crear el nivel y plataformas
@@ -87,7 +89,7 @@ heart = Heart(1000, level_height - 400, heart_images)
 coin_count = 0
 heart_count = 3
 heart_collected = False
-ninja_hit_time = 0  # Inicializar la variable para el manejo de colisiones
+ninja_hit_time = 0
 
 # Bucle principal
 clock = pygame.time.Clock()
@@ -98,19 +100,27 @@ while running:
             running = False
 
     keys = pygame.key.get_pressed()
+
+    # Movimiento y animaciones
+    if keys[pygame.K_LEFT] or keys[pygame.K_RIGHT]:
+        player.set_action("walk_left" if keys[pygame.K_LEFT] else "walk_right")
+    else:
+        if not player.is_attacking and not player.is_dead:  # Priorizar otras acciones
+            player.set_action("idle")
+
     if keys[pygame.K_SPACE]:
-        player.jump()
+        player.attack()
 
     # Actualizar jugador
     player.update(keys, level.get_platforms(), WIDTH, HEIGHT)
 
     # Lógica del movimiento del Ninja
     for ninja in ninjas:
-        ninja.update(level.get_platforms())  # Actualiza posición y gravedad
+        ninja.update(level.get_platforms())
 
         # Cambiar dirección en los límites
         if ninja.facing_right:
-            ninja.rect.x += 2  # Velocidad ajustada
+            ninja.rect.x += 2
             if ninja.rect.right >= level_width:
                 ninja.facing_right = False
         else:
@@ -120,17 +130,14 @@ while running:
 
         # Colisión entre jugador y ninja
         if pygame.sprite.collide_rect(player, ninja):
-            if player.rect.bottom <= ninja.rect.top + 10 and player.velocity_y > 0:
-                # Golpe desde arriba
-                player.velocity_y = -10  # Rebote del jugador
-                ninja.health -= 1  # Reducir salud del ninja
+            if player.is_attacking:
+                ninja.health -= 1
                 if ninja.health <= 0:
-                    ninja.kill()  # Eliminar al ninja si su salud es 0
-            else:
-                # Daño al jugador si no es un golpe válido desde arriba
-                if pygame.time.get_ticks() - ninja_hit_time > 1000:  # Temporizador
-                    heart_count -= 1
-                    ninja_hit_time = pygame.time.get_ticks()
+                    ninja.kill()
+            elif not player.is_dead and pygame.time.get_ticks() - ninja_hit_time > 1000:
+                player.take_damage()
+                heart_count -= 1
+                ninja_hit_time = pygame.time.get_ticks()
 
     # Actualizar cámara
     camera.update(player, WIDTH, HEIGHT)

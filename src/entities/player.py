@@ -8,6 +8,8 @@ class Player(pygame.sprite.Sprite):
             "walk_left": self.load_frames(sprite_paths['walk2'], 3),
             "jumpfall": self.load_frames(sprite_paths['jumpfall'], 3),
             "idle": self.load_frames(sprite_paths['idle'], 4),
+            "attack": self.load_frames(sprite_paths['attack'], 11),
+            "death": self.load_frames(sprite_paths['death'], 9),
         }
         self.current_action = "idle"
         self.current_frame = 0
@@ -19,6 +21,9 @@ class Player(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(topleft=(x, y))
         self.velocity_y = 0
         self.on_ground = False
+        self.is_attacking = False
+        self.is_dead = False
+        self.damage_timer = 0  # Temporizador para gestionar el daño
 
     def load_frames(self, sprite_sheet_path, frame_count):
         sprite_sheet = pygame.image.load(sprite_sheet_path).convert_alpha()
@@ -41,7 +46,7 @@ class Player(pygame.sprite.Sprite):
         self.on_ground = False
         for platform in platforms:
             if self.rect.colliderect(platform.rect):
-                if self.velocity_y > 0:  # Si el jugador está cayendo
+                if self.velocity_y > 0:
                     self.rect.bottom = platform.rect.top
                     self.velocity_y = 0
                     self.on_ground = True
@@ -53,39 +58,77 @@ class Player(pygame.sprite.Sprite):
             self.on_ground = False
             self.set_action("jumpfall")
 
+    def attack(self):
+        if not self.is_attacking and not self.is_dead:
+            self.is_attacking = True
+            self.set_action("attack")
+
+    def take_damage(self):
+        if not self.is_dead and pygame.time.get_ticks() - self.damage_timer > 1000:
+            self.is_dead = True
+            self.set_action("death")
+            self.damage_timer = pygame.time.get_ticks()
+
     def update(self, keys, platforms, screen_width, screen_height):
-        # Movimiento horizontal
-        if keys[pygame.K_LEFT]:
-            self.rect.x -= 5
-            self.set_action("walk_left")
-            self.facing_right = False
-        elif keys[pygame.K_RIGHT]:
-            self.rect.x += 5
-            self.set_action("walk_right")
-            self.facing_right = True
+        if self.is_dead:
+            self.animation_timer += self.animation_speed
+            if self.animation_timer >= 1:
+                self.current_frame += 1
+                if self.current_frame >= len(self.animations[self.current_action]):
+                    self.is_dead = False
+                    self.set_action("idle")
+                self.animation_timer = 0
+
+        elif self.is_attacking:
+            self.animation_timer += self.animation_speed
+            if self.animation_timer >= 1:
+                self.current_frame += 1
+                if self.current_frame >= len(self.animations[self.current_action]):
+                    self.is_attacking = False
+                    self.set_action("idle")
+                self.animation_timer = 0
+
         else:
-            if self.on_ground:
-                self.set_action("idle")
+            # Movimiento horizontal
+            if keys[pygame.K_LEFT]:
+                self.rect.x -= 5
+                self.set_action("walk_left")
+                self.facing_right = False
+            elif keys[pygame.K_RIGHT]:
+                self.rect.x += 5
+                self.set_action("walk_right")
+                self.facing_right = True
+            else:
+                if self.on_ground:
+                    self.set_action("idle")
+
+            # Salto
+            if keys[pygame.K_UP] and self.on_ground:
+                self.jump()
+
+            # Ataque
+            if keys[pygame.K_SPACE]:
+                self.attack()
 
         # Aplicar gravedad
         self.velocity_y += 1
         self.rect.y += self.velocity_y
 
-        # Limitar al jugador dentro de la pantalla
+        # Límite de la pantalla
         if self.rect.left < 0:
             self.rect.left = 0
-        if self.rect.bottom > screen_height:  # Límite inferior
+        if self.rect.bottom > screen_height:
             self.on_ground = True
 
-      # Manejo de colisiones con plataformas y rocas
+        # Colisiones con plataformas
         self.handle_platform_collisions(platforms)
 
-        # Animación
+        # Actualizar animación
         self.animation_timer += self.animation_speed
         if self.animation_timer >= 1:
             self.current_frame = (self.current_frame + 1) % len(self.animations[self.current_action])
             self.animation_timer = 0
 
-        # Actualizar la imagen
+        # Actualizar imagen
         current_image = self.animations[self.current_action][self.current_frame]
         self.image = pygame.transform.flip(current_image, True, False) if not self.facing_right else current_image
