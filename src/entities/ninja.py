@@ -51,7 +51,7 @@ class Ninja(pygame.sprite.Sprite):
 
         # Actualizar la imagen
         current_image = self.animations[self.current_action][self.current_frame]
-        self.image = pygame.transform.flip(current_image, True, False) if not self.facing_right else current_image
+        self.image = pygame.transform.flip(current_image, not self.facing_right, False)
 
     def handle_platform_collisions(self, platforms):
         self.on_ground = False
@@ -77,8 +77,5 @@ class Ninja(pygame.sprite.Sprite):
             self.rect.x -= 5
             self.facing_right = False
 
-        # Girar la imagen según la dirección
-        if self.facing_right:
-            self.image = self.animations[self.current_action][self.current_frame]
-        else:
-            self.image = pygame.transform.flip(self.animations[self.current_action][self.current_frame], True, False)
+        # Actualizar la acción a caminar mientras se mueve
+        self.set_action("ninja_walk")
