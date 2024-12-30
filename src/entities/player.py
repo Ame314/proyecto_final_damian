@@ -3,6 +3,7 @@ import pygame
 class Player(pygame.sprite.Sprite):
     def __init__(self, x, y, sprite_paths):
         super().__init__()
+        self.sprite_paths = sprite_paths
         self.animations = {
             "walk_right": self.load_frames(sprite_paths['walk'], 3),
             "walk_left": self.load_frames(sprite_paths['walk2'], 3),

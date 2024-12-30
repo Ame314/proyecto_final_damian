@@ -31,15 +31,18 @@ level_height = 800
 camera = Camera(level_width, level_height, WIDTH, HEIGHT)
 
 # Crear jugador
-player = Player(100, level_height - 100, {
+player_initial_x = 100
+player_initial_y = level_height - 100
+player = Player(player_initial_x, player_initial_y, {
     'walk': 'assets/images/walk.png',
     'walk2': 'assets/images/walk2.png',
     'jumpfall': 'assets/images/jumpfall.png',
     'idle': 'assets/images/idle.png',
     'attack': 'assets/images/attack.png',
-    'death': 'assets/images/death.png',  # Asegúrate de tener el sprite de muerte
+    'death': 'assets/images/death.png',
     'death1': 'assets/images/death1.png'
 })
+
 
 # Crear el nivel seleccionado
 ninja_sprite_paths = {
@@ -47,92 +50,142 @@ ninja_sprite_paths = {
     'ninja_jumpfall': 'assets/images/ninja_jumpfall.png'
 }
 
-if selected_level == 1:
-    level = Level(level_width, level_height, ninja_sprite_paths)
-elif selected_level == 2:
-    level = Level2(level_width, level_height, ninja_sprite_paths)
-elif selected_level == 3:
-    level = Level3(level_width, level_height, ninja_sprite_paths)
+def load_level(selected_level):
+    if selected_level == 1:
+        return Level(level_width, level_height, ninja_sprite_paths)
+    elif selected_level == 2:
+        return Level2(level_width, level_height, ninja_sprite_paths)
+    elif selected_level == 3:
+        return Level3(level_width, level_height, ninja_sprite_paths)
 
-# Inicializar contadores
+level = load_level(selected_level)
+
+# Inicialización de variables
 coin_count = 0
 heart_count = 3
 ninja_hit_time = 0
-
-# Variables para el temporizador de muerte
-death_delay_duration = 1000  # 1 segundo
-death_delay_start_time = None  # Tiempo de inicio del retraso
-death_delay_active = False  # Estado del retraso
-
-# Bucle principal
+victory_once = False
+death_delay_duration = 1000
+death_delay_start_time = None
+death_delay_active = False
 clock = pygame.time.Clock()
 running = True
-game_over = False  # Variable para controlar el estado de juego
-victory_active = False  # Variable para controlar el estado de victoria
+victory_active = False
+game_over = False
+paused = False
+
+# Función para pausar el juego
+def pause_menu():
+    global paused, running, selected_level, level, player
+    font = pygame.font.Font(None, 36)
+    while paused:
+        screen.fill((0, 0, 0))
+        text = font.render("Juego Pausado", True, (255, 255, 255))
+        resume_text = font.render("Presiona R para reanudar", True, (255, 255, 255))
+        menu_text = font.render("Presiona M para ir al menú", True, (255, 255, 255))
+        screen.blit(text, (WIDTH // 2 - text.get_width() // 2, HEIGHT // 2 - 50))
+        screen.blit(resume_text, (WIDTH // 2 - resume_text.get_width() // 2, HEIGHT // 2))
+        screen.blit(menu_text, (WIDTH // 2 - menu_text.get_width() // 2, HEIGHT // 2 + 50))
+        pygame.display.flip()
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                paused = False
+                running = False
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_r:
+                    paused = False
+                elif event.key == pygame.K_m:
+                    paused = False
+                    selected_level = menu_screen.run()
+                    level = load_level(selected_level)
+                    player = Player(player_initial_x, player_initial_y, player.sprite_paths)
+
+
+# Inicializar reloj y variables de estado
+clock = pygame.time.Clock()
+running = True
+victory_active = False  # Estado de victoria
+game_over = False  
 
 # Bucle principal del juego
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_p:
+                paused = True
+                pause_menu()
 
     keys = pygame.key.get_pressed()
 
-    # Verificar si el jugador ha muerto
-    if heart_count <= 0:  # Si las vidas son 0
-        if not death_delay_active:  # Si el retraso no está activo
-            death_delay_start_time = pygame.time.get_ticks()  # Guardar el tiempo actual
-            death_delay_active = True  # Activar el retraso
+    # Manejo del estado de Game Over
+    if heart_count <= 0 and not game_over:
+        if not death_delay_active:
+            death_delay_start_time = pygame.time.get_ticks()
+            death_delay_active = True
         else:
-            # Comprobar si ha pasado el tiempo de retraso
             if pygame.time.get_ticks() - death_delay_start_time >= death_delay_duration:
-                player.set_action("death1")  # Cambiar a la animación de muerte
-                game_over = True  # Cambiar el estado del juego a "game over"
-                death_delay_active = False  # Desactivar el retraso
+                player.set_action("death1")
+                game_over = True
+                death_delay_active = False
 
-    # Verificar si el jugador ha ganado
-    if not game_over and not victory_active:
-        for victory_object in level.victory_objects:
-            if pygame.sprite.collide_rect(player, victory_object):
-                victory_active = True  # Activar el estado de victoria
-
-    if victory_active:
-        screen.fill((0, 0, 0))  # Fondo negro para la pantalla de victoria
-        font = pygame.font.Font(None, 36)  # Fuente más pequeña
-        text = font.render("¡Has ganado!", True, (0, 255, 0))
-        next_level_text = font.render("Presiona N para siguiente nivel, M para menú o ESC para salir", True, (255, 255, 255))
+    if game_over:
+        screen.fill((0, 0, 0))
+        font = pygame.font.Font(None, 36)
+        text = font.render("¡Has perdido!", True, (255, 0, 0))
+        restart_text = font.render("Presiona R para reiniciar, M para menú o ESC para salir", True, (255, 255, 255))
         screen.blit(text, (WIDTH // 2 - text.get_width() // 2, HEIGHT // 2 - 50))
-        screen.blit(next_level_text, (WIDTH // 2 - next_level_text.get_width() // 2, HEIGHT // 2 + 10))
+        screen.blit(restart_text, (WIDTH // 2 - restart_text.get_width() // 2, HEIGHT // 2 + 10))
         pygame.display.flip()
 
-        # Esperar a que el jugador presione N, M o ESC
-        waiting = True
-        while waiting:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    waiting = False
+        for event in pygame.event.get():
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_r:
+                    game_over = False
+                    heart_count = 3
+                    coin_count = 0
+                    player = Player(player_initial_x, player_initial_y, player.sprite_paths)
+                    level = load_level(selected_level)
+                elif event.key == pygame.K_m:
+                    selected_level = menu_screen.run()
+                    level = load_level(selected_level)
+                    player = Player(player_initial_x, player_initial_y, player.sprite_paths)
+                    game_over = False
+                elif event.key == pygame.K_ESCAPE:
                     running = False
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_n:  # Siguiente nivel
-                        # Aquí puedes cargar el siguiente nivel
-                        # Por ejemplo: level = Level2(level_width, level_height, ninja_sprite_paths)
-                        waiting = False
-                    elif event.key == pygame.K_m:  # Volver al menú
-                        selected_level = menu_screen.run()
-                        if selected_level == 1:
-                            level = Level(level_width, level_height, ninja_sprite_paths)
-                        elif selected_level == 2:
-                            level = Level2(level_width, level_height, ninja_sprite_paths)
-                        elif selected_level == 3:
-                            level = Level3(level_width, level_height, ninja_sprite_paths)
-                        waiting = False
-                    elif event.key == pygame.K_ESCAPE:  # Salir
-                        waiting = False
-                        running = False
-        continue  # Reiniciar el bucle para evitar que se ejecute el resto del código
+        continue
 
-    # Movimiento y animaciones
-    if not game_over and not victory_active:  # Solo permitir movimiento si no está en game over y no hay victoria
+    # Lógica de victoria
+    for victory_object in level.victory_objects:
+        if pygame.sprite.collide_rect(player, victory_object):
+            victory_active = True
+
+    if victory_active:
+        screen.fill((0, 0, 0))
+        font = pygame.font.Font(None, 36)
+        text = font.render("¡Has ganado!", True, (0, 255, 0))
+        screen.blit(text, (WIDTH // 2 - text.get_width() // 2, HEIGHT // 2 - 50))
+        pygame.display.flip()
+        pygame.time.wait(5000)  # Esperar 5 segundos
+        selected_level += 1
+        if selected_level > 3:
+            screen.fill((0, 0, 0))
+            text = font.render("¡Has completado el juego!", True, (0, 255, 0))
+            screen.blit(text, (WIDTH // 2 - text.get_width() // 2, HEIGHT // 2))
+            pygame.display.flip()
+            pygame.time.wait(3000)
+            running = False
+        else:
+            level = load_level(selected_level)
+            player = Player(player_initial_x, player_initial_y, player.sprite_paths)
+            victory_active = False
+        continue
+
+
+    # Lógica de movimiento y animación
+    if not game_over and not victory_active:
         if keys[pygame.K_LEFT] or keys[pygame.K_RIGHT]:
             player.set_action("walk_left" if keys[pygame.K_LEFT] else "walk_right")
         else:
@@ -142,14 +195,10 @@ while running:
         if keys[pygame.K_SPACE]:
             player.attack()
 
-        # Actualizar jugador
         player.update(keys, level.get_platforms(), WIDTH, HEIGHT)
 
-        # Lógica del movimiento del Ninja
         for ninja in level.ninjas:
             ninja.update(level.get_platforms())
-
-            # Cambiar dirección en los límites
             if ninja.facing_right:
                 ninja.rect.x += 2
                 if ninja.rect.right >= level_width:
@@ -159,50 +208,38 @@ while running:
                 if ninja.rect.left <= 0:
                     ninja.facing_right = True
 
-            # Colisión entre jugador y ninja
             if pygame.sprite.collide_rect(player, ninja):
                 if player.is_attacking:
-                    ninja.take_damage()  # Llama al método para reducir la salud
+                    ninja.take_damage()
                 elif not player.is_dead and pygame.time.get_ticks() - ninja_hit_time > 1000:
                     heart_count -= 1
                     player.take_damage()
                     ninja_hit_time = pygame.time.get_ticks()
 
-        # Actualizar cámara
         camera.update(player, WIDTH, HEIGHT)
 
-        # Actualizar monedas y corazones
         level.coins.update(pygame.time.get_ticks())
         level.hearts.update(pygame.time.get_ticks())
 
-        # Colisión jugador-monedas
         collected_coins = pygame.sprite.spritecollide(player, level.coins, True)
         coin_count += len(collected_coins)
 
-        # Colisión jugador-corazón
         for heart in level.hearts:
             if pygame.sprite.collide_rect(player, heart):
                 heart_count += 1
-                heart.kill()  # Eliminar el corazón del juego
+                heart.kill()
 
-        # Dibujar todo en la pantalla
-        screen.fill((135, 206, 250))  # Fondo azul cielo
-
-        # Dibujar plataformas
+        screen.fill((135, 206, 250))
         level.draw(screen, camera)
 
-        # Dibujar monedas
         for coin in level.coins:
             screen.blit(coin.image, camera.apply(coin))
 
-        # Dibujar jugador
         screen.blit(player.image, camera.apply(player))
 
-        # Dibujar corazones
         for heart in level.hearts:
             screen.blit(heart.image, camera.apply(heart))
 
-        # Dibujar contadores
         font = pygame.font.Font(None, 36)
         coin_text = font.render(f'Monedas: {coin_count}', True, (255, 255, 255))
         heart_text = font.render(f'Vidas: {heart_count}', True, (255, 255, 255))
