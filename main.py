@@ -15,9 +15,13 @@ WIDTH, HEIGHT = 800, 600
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Juego de Plataformas")
 
-# Pantalla de inicio de sesión
-#login_screen = LoginScreen(screen)
-#login_screen.run()
+# Función para mostrar la pantalla de login
+def login():
+    login_screen = LoginScreen(screen)
+    login_screen.run()  # Aquí el usuario interactúa con la pantalla de login
+
+# Mostrar la pantalla de login
+login()
 
 # Pantalla de menú
 menu_screen = MenuScreen(screen)
