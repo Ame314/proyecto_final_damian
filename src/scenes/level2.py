@@ -33,11 +33,18 @@ class Level2:
         self.create_hearts()
         self.create_coins()
 
+        # Posición inicial del jugador
+        self.player_start_position = (100, level_height - 150)  # Ajusta según sea necesario
+
     def create_ninjas(self, sprite_paths):
         ninja_positions = [(200, self.height - 120), (600, self.height - 220), (1000, self.height - 150)]
         for pos in ninja_positions:
             ninja = Ninja(pos[0], pos[1], sprite_paths)
             self.ninjas.add(ninja)
+
+    def reset_ninjas(self, sprite_paths):
+        self.ninjas.empty()  # Eliminar todos los ninjas existentes
+        self.create_ninjas(sprite_paths)  # Volver a crear los ninjas
 
     def create_hearts(self):
         heart_positions = [(300, self.height - 150), (1200, self.height - 250)]
@@ -52,6 +59,9 @@ class Level2:
         for pos in coin_positions:
             coin = Coin(pos[0], pos[1], coin_images)
             self.coins.add(coin)
+
+    def get_player_start_position(self):
+        return self.player_start_position  # Método para obtener la posición inicial del jugador
 
     def draw(self, screen, camera):
         for platform in self.platforms:

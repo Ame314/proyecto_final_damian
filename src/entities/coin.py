@@ -19,3 +19,4 @@ class Coin(pygame.sprite.Sprite):
 
     def reset(self):
         self.index = 0  # Reiniciar la animación
+        

@@ -10,6 +10,7 @@ class Player(pygame.sprite.Sprite):
             "idle": self.load_frames(sprite_paths['idle'], 4),
             "attack": self.load_frames(sprite_paths['attack'], 12),
             "death": self.load_frames(sprite_paths['death'], 9),
+            "death1": self.load_frames(sprite_paths['death1'], 5)
         }
         self.current_action = "idle"
         self.current_frame = 0
@@ -23,7 +24,10 @@ class Player(pygame.sprite.Sprite):
         self.on_ground = False
         self.is_attacking = False
         self.is_dead = False
+        self.is_death1 = False  # Nueva variable para controlar la animación death1
         self.damage_timer = 0  # Temporizador para gestionar el daño
+        self.death_delay_timer = 0  # Temporizador para el retraso de muerte
+        self.death_delay_duration = 500  # Duración del retraso en milisegundos
 
     def load_frames(self, sprite_sheet_path, frame_count):
         sprite_sheet = pygame.image.load(sprite_sheet_path).convert_alpha()
@@ -76,10 +80,20 @@ class Player(pygame.sprite.Sprite):
             if self.animation_timer >= 1:
                 self.current_frame += 1
                 if self.current_frame >= len(self.animations[self.current_action]):
-                    # Finaliza la animación de muerte
+                    # Iniciar el temporizador de retraso
+                    self.death_delay_timer = pygame.time.get_ticks()  # Reiniciar el temporizador
                     self.is_dead = False
-                    self.set_action("idle")
+                    self.is_death1 = True  # Cambiar a la animación death1
+                    self.set_action("death1")
+                    self.current_frame = 0  # Reiniciar el frame para death1
                 self.animation_timer = 0
+
+        # Manejar el retraso después de la animación de muerte
+        elif self.is_death1:
+            if pygame.time.get_ticks() - self.death_delay_timer >= self.death_delay_duration:
+                # Finaliza la animación de death1
+                self.is_death1 = False
+                self.set_action("idle")  # Volver a la acción de estar quieto
 
         # Animación de ataque
         elif self.is_attacking:
@@ -135,5 +149,13 @@ class Player(pygame.sprite.Sprite):
             self.animation_timer = 0
 
         # Actualizar imagen
-        current_image = self.animations[self.current_action][self.current_frame]
+        if self.current_action in self.animations:
+            frames = self.animations[self.current_action]
+            if self.current_frame < len(frames):
+                current_image = frames[self.current_frame]
+            else:
+                current_image = frames[-1]  # O reiniciar a 0, o cualquier lógica que desees
+        else:
+            current_image = self.animations['idle'][0]  # Acción por defecto
+
         self.image = pygame.transform.flip(current_image, True, False) if not self.facing_right else current_image

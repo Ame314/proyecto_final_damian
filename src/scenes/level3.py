@@ -3,9 +3,10 @@ from .platform import Platform
 from src.entities.ninja import Ninja
 from src.entities.heart import Heart
 from src.entities.coin import Coin
+from src.entities.player import Player  # Asegúrate de tener la clase Player definida
 
 class Level3:
-    def __init__(self, level_width, level_height, ninja_sprite_paths):
+    def __init__(self, level_width, level_height, ninja_sprite_paths, player_sprite_paths):
         self.width = level_width
         self.height = level_height
         self.platforms = pygame.sprite.Group()
@@ -28,6 +29,9 @@ class Level3:
             platform = Platform(x, y, platform_type)
             self.platforms.add(platform)
 
+        # Crear el jugador
+        self.player = Player(100, level_height - 150, player_sprite_paths)  # Ajusta la posición inicial según sea necesario
+
         # Crear ninjas, corazones y monedas
         self.create_ninjas(ninja_sprite_paths)
         self.create_hearts()
@@ -38,6 +42,11 @@ class Level3:
         for pos in ninja_positions:
             ninja = Ninja(pos[0], pos[1], sprite_paths)
             self.ninjas.add(ninja)
+
+    def reset_ninjas(self, sprite_paths):
+        """Reinicia los ninjas en el nivel."""
+        self.ninjas.empty()  # Eliminar todos los ninjas existentes
+        self.create_ninjas(sprite_paths)  # Volver a crear los ninjas
 
     def create_hearts(self):
         heart_positions = [(400, self.height - 150), (1300, self.height - 250)]
@@ -66,3 +75,12 @@ class Level3:
 
     def get_platforms(self):
         return self.platforms
+
+    def get_player(self):
+        return self.player  # Método para obtener el jugador
+
+    def reset_level(self, ninja_sprite_paths):
+        """Reinicia el nivel, incluyendo el jugador y los ninjas."""
+        self.player.rect.x, self.player.rect.y = 100, self.height - 150  # Reiniciar posición del jugador
+        self.reset_ninjas(ninja_sprite_paths)  # Reiniciar los ninjas
+        # Aquí puedes reiniciar corazones y monedas si es necesario
