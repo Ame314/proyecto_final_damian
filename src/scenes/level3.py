@@ -17,12 +17,12 @@ class Level3:
 
         # Datos de plataformas: (x, y, tipo de plataforma)
         platform_data = [
-            (100, level_height - 100, 1),
-            (400, level_height - 200, 2),
-            (700, level_height - 150, 3),
-            (1000, level_height - 250, 4),
-            (1400, level_height - 100, 5),
-            (1800, level_height - 200, 1),
+            (100, level_height - 100, 1),   # First platform
+            (400, level_height - 250, 2),   # Second platform, lowered for easier access
+            (700, level_height - 200, 3),   # Third platform, slightly higher
+            (1000, level_height - 300, 4),  # Fourth platform, lowered to create a gap
+            (1400, level_height - 150, 5),  # Fifth platform, higher for a challenge
+            (1800, level_height - 250, 1),  # Sixth platform, lowered for accessibility
         ]
 
         # Crear las plataformas y añadirlas al grupo
@@ -61,7 +61,11 @@ class Level3:
             self.ninjas.add(ninja)
 
     def create_hearts(self):
-        heart_positions = [(300, self.height - 150), (800, self.height - 250), (1200, self.height - 180)]  # Posiciones de los corazones
+        heart_positions = [
+             (300, self.height - 120),  # Above the first platform
+            (1000, self.height - 220), # Above the fourth platform
+            (1600, self.height - 180), # Above the fifth platform
+        ]  # Posiciones de los corazones
         heart_images = [pygame.transform.scale(pygame.image.load(f'assets/images/heart_frame_{i}.png').convert_alpha(), (30, 30)) for i in range(3)]
         for pos in heart_positions:
             heart = Heart(pos[0], pos[1], heart_images)
@@ -69,16 +73,26 @@ class Level3:
 
     def create_coins(self):
         coin_positions = [
-            (150, self.height - 220),  # Moneda sobre la primera plataforma
-            (400, self.height - 270),  # Moneda sobre la segunda plataforma
-            (700, self.height - 200),   # Moneda sobre la tercera plataforma
-            (1000, self.height - 270),  # Moneda sobre la cuarta plataforma
-            (1400, self.height - 220),  # Moneda sobre la quinta plataforma
-            (1800, self.height - 300),  # Moneda sobre la sexta plataforma
-            (600, self.height - 320),   # Moneda adicional entre la segunda y tercera plataforma
-            (1200, self.height - 320),  # Moneda adicional entre la cuarta y quinta plataforma
-            (900, self.height - 320),    # Moneda adicional más arriba
-            (1800, self.height - 360)   # Otra moneda más arriba
+            (150, self.height - 180),  # Above the first platform
+            (250, self.height - 220),  # Between the first and second platforms
+            (350, self.height - 240),  # Above the second platform
+            (450, self.height - 300),  # Above the second platform
+            (550, self.height - 200),  # Between the second and third platforms
+            (650, self.height - 150),  # Above the third platform
+            (750, self.height - 250),  # Above the third platform
+            (800, self.height - 300),  # Between the third and fourth platforms
+            (950, self.height - 280),  # Above the fourth platform
+            (1100, self.height - 220), # Above the fourth platform
+            (1200, self.height - 180), # Between the fourth and fifth platforms
+            (1300, self.height - 150), # Above the fifth platform
+            (1450, self.height - 200), # Above the fifth platform
+            (1550, self.height - 250), # Between the fifth and sixth platforms
+            (1650, self.height - 180), # Above the sixth platform
+            (1750, self.height - 220), # Above the sixth platform
+            (1850, self.height - 500), # Between the sixth and seventh platforms
+            (1900, self.height - 510), # Above the seventh platform
+            (1950, self.height - 450), # Above the seventh platform
+            (2000, self.height - 480), # Above the last platform
         ]
         coin_images = [pygame.transform.scale(pygame.image.load(f'assets/images/coin_frame_{i}.png').convert_alpha(), (30, 30)) for i in range(3)]
         for pos in coin_positions:

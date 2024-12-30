@@ -18,11 +18,14 @@ class Level2:
         # Datos de plataformas: (x, y, tipo de plataforma)
         platform_data = [
             (100, level_height - 100, 1),
-            (400, level_height - 200, 2),
-            (800, level_height - 150, 3),
+            (200, level_height - 400, 3),
+            (300, level_height - 150, 3),
             (1200, level_height - 250, 4),
             (1600, level_height - 100, 5),
             (2000, level_height - 300, 2),
+            (450, level_height - 200, 2),
+            (800, level_height - 350, 3),
+            (1750, level_height - 200, 2),
         ]
 
         # Crear las plataformas y añadirlas al grupo
@@ -58,7 +61,7 @@ class Level2:
         self.victory_objects.add(victory_object)
 
     def create_ninjas(self, sprite_paths):
-        ninja_positions = [(200, self.height - 120), (600, self.height - 220), (1000, self.height - 150)]
+        ninja_positions = [(200, self.height - 120), (600, self.height - 220), (1000, self.height - 150), (1000, self.height - 1000)]
         for pos in ninja_positions:
             ninja = Ninja(pos[0], pos[1], sprite_paths)
             self.ninjas.add(ninja)
@@ -68,14 +71,33 @@ class Level2:
         self.create_ninjas(sprite_paths)  # Volver a crear los ninjas
 
     def create_hearts(self):
-        heart_positions = [(300, self.height - 150), (1200, self.height - 250)]
+        heart_positions = [
+            (300, self.height - 150), 
+            (1200, self.height - 250),
+            (100, self.height - 150),
+            (900, self.height - 250)
+        ]
+
         heart_images = [pygame.transform.scale(pygame.image.load(f'assets/images/heart_frame_{i}.png').convert_alpha(), (30, 30)) for i in range(3)]
         for pos in heart_positions:
             heart = Heart(pos[0], pos[1], heart_images)
             self.hearts.add(heart)
 
     def create_coins(self):
-        coin_positions = [(150, self.height - 180), (900, self.height - 280), (1700, self.height - 220)]
+        coin_positions = [
+            (150, self.height - 180), 
+            (900, self.height - 280), 
+            (1700, self.height - 220),
+            (100, self.height - 150),  # Above the first platform
+            (200, self.height - 350),  # Above the second platform
+            (300, self.height - 200),  # Above the third platform
+            (1200, self.height - 200), # Above the fourth platform
+            (1600, self.height - 150), # Above the fifth platform
+            (2000, self.height - 250), # Above the sixth platform
+            (450, self.height - 150),  # Above the seventh platform
+            (800, self.height - 300),  # Above the eighth platform
+            (1750, self.height - 150), # Above the ninth platform
+        ]
         coin_images = [pygame.transform.scale(pygame.image.load(f'assets/images/coin_frame_{i}.png').convert_alpha(), (30, 30)) for i in range(3)]
         for pos in coin_positions:
             coin = Coin(pos[0], pos[1], coin_images)
