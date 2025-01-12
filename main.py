@@ -3,6 +3,7 @@ import mysql.connector
 from mysql.connector import Error
 from src.scenes.login import LoginScreen
 from src.scenes.menu import MenuScreen
+from src.scenes.progress import ProgressScreen
 from src.utils.CurrentUser import CurrentUser
 from src.scenes.level import Level
 from src.scenes.level2 import Level2
@@ -115,7 +116,7 @@ heart_count = 3
 points_count = 0
 enemigos_derrotados = 0
 ninja_hit_time = 0
-user_id = 1  # ID del usuario en la base de datos (debería obtenerse desde el login)
+user_id = CurrentUser.user_id  # ID del usuario en la base de datos (debería obtenerse desde el login)
 victory_once = False
 death_delay_duration = 1000
 death_delay_start_time = None
@@ -235,14 +236,18 @@ while running:
         screen.blit(time_text, (10, 10))
 
         pygame.display.flip()
-        pygame.time.wait(4000)  # Esperar 4 segundos
+        pygame.time.wait(3000)  # Esperar 4 segundos
         selected_level += 1
+        elapsed_time = (pygame.time.get_ticks() - start_time) // 1000
+        save_progress(user_id, selected_level, points_count, enemigos_derrotados, elapsed_time)
         if selected_level > 3:
             screen.fill((0, 0, 0))
             text = font.render("¡Has completado el juego!", True, (0, 255, 0))
             screen.blit(text, (WIDTH // 2 - text.get_width() // 2, HEIGHT // 2))
             pygame.display.flip()
             pygame.time.wait(3000)
+            progress_screen = ProgressScreen(screen)  # Crear una instancia de ProgressScreen
+            progress_screen.run()
             
 
         else:
