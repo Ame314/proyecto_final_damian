@@ -1,12 +1,56 @@
 import pygame
+import mysql.connector
+from mysql.connector import Error
 from src.scenes.login import LoginScreen
 from src.scenes.menu import MenuScreen
-#from src.scenes.progres import MenuScreen
+from src.utils.CurrentUser import CurrentUser
 from src.scenes.level import Level
 from src.scenes.level2 import Level2
 from src.scenes.level3 import Level3
 from src.entities.player import Player
 from src.utils.camara import Camera
+
+# Configuración de MySQL
+def create_connection():
+    try:
+        connection = mysql.connector.connect(
+            host='172.17.0.5',
+            user='root',
+            password='rootpassword',
+            database='game_db'
+        )
+        return connection
+    except Error as e:
+        print(f"Error al conectar a la base de datos: {e}")
+        return None
+
+def save_progress(user_id, level, score, enemies_defeated, elapsed_time):
+    connection = create_connection()
+    if connection is None:
+        return
+
+    try:
+        cursor = connection.cursor()
+        # Guardar progreso
+        cursor.execute(
+            """INSERT INTO progreso (id_usuario, nivel_alcanzado, puntuacion_maxima)
+            VALUES (%s, %s, %s)""",
+            (CurrentUser.user_id, level, score)
+        )
+
+        # Guardar estadísticas
+        cursor.execute(
+            """INSERT INTO estadisticas (id_usuario, tiempo_juego, enemigos_derrotados)
+            VALUES (%s, %s, %s)""",
+            (CurrentUser.user_id, elapsed_time, enemies_defeated) 
+        )
+
+        connection.commit()
+        print("Progreso guardado correctamente.")
+    except Error as e:
+        print(f"Error al guardar datos: {e}")
+    finally:
+        connection.close()
 
 # Inicializar Pygame
 pygame.init()
@@ -71,6 +115,7 @@ heart_count = 3
 points_count = 0
 enemigos_derrotados = 0
 ninja_hit_time = 0
+user_id = 1  # ID del usuario en la base de datos (debería obtenerse desde el login)
 victory_once = False
 death_delay_duration = 1000
 death_delay_start_time = None
@@ -284,5 +329,8 @@ while running:
 
     pygame.display.flip()
     clock.tick(60)
+# Guardar progreso al terminar
+elapsed_time = (pygame.time.get_ticks() - start_time) // 1000
+save_progress(user_id, selected_level, points_count, enemigos_derrotados, elapsed_time)
 
 pygame.quit()

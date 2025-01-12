@@ -3,6 +3,7 @@ import bcrypt  # Librería para manejar contraseñas
 import mysql.connector
 from mysql.connector import Error
 from src.scenes.menu import MenuScreen  # Importa la pantalla del menú
+from src.utils.CurrentUser import CurrentUser
 
 class LoginScreen:
     def __init__(self, screen):
@@ -52,15 +53,15 @@ class LoginScreen:
         connection = self.create_connection()
         if connection:
             cursor = connection.cursor()
-            query = "SELECT contrasena FROM usuarios WHERE nombre_usuario = %s"
+            query = "SELECT id, contrasena FROM usuarios WHERE nombre_usuario = %s"
             cursor.execute(query, (username,))
             user = cursor.fetchone()
             cursor.close()
             connection.close()
 
-            if user and bcrypt.checkpw(password.encode('utf-8'), user[0].encode('utf-8')):
-                return True
-        return False
+            if user and bcrypt.checkpw(password.encode('utf-8'), user[1].encode('utf-8')):
+                return user[0]  # Devuelve el user_id si el inicio de sesión es exitoso
+        return None
 
     def register_user(self, username, password):
         """Registra un nuevo usuario en la base de datos."""
@@ -71,13 +72,17 @@ class LoginScreen:
                 hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
                 cursor.execute("INSERT INTO usuarios (nombre_usuario, contrasena) VALUES (%s, %s)", (username, hashed_password))
                 connection.commit()
-                return True
+
+                # Obtener el user_id del usuario recién registrado
+                cursor.execute("SELECT id FROM usuarios WHERE nombre_usuario = %s", (username,))
+                user = cursor.fetchone()
+                return user[0] if user else None  # Devuelve el user_id
             except Error as e:
                 print(f"The error '{e}' occurred")
             finally:
                 cursor.close()
                 connection.close()
-        return False
+        return None
 
     def run(self):
         running = True
@@ -101,16 +106,22 @@ class LoginScreen:
                         else:
                             if self.user_exists(self.username):
                                 # Si el usuario existe, verificamos la contraseña
-                                if self.login_user(self.username, self.password):
+                                user_id = self.login_user(self.username, self.password)
+                                if user_id:
                                     print(f"Login successful! Welcome, {self.username}")
+                                    CurrentUser.username = self.username  # Guardar el nombre de usuario actual
+                                    CurrentUser.user_id = user_id  # Guardar el user_id actual
                                     return MenuScreen(self.screen)  # Transición al menú
                                 else:
                                     self.error_message = "Incorrect password!"
                             else:
                                 # Si el usuario no existe, registramos el usuario
                                 print(f"Usuario no encontrado, registrando: {self.username}")
-                                if self.register_user(self.username, self.password):
+                                user_id = self.register_user(self.username, self.password)
+                                if user_id:
                                     print("Registration successful!")
+                                    CurrentUser.username = self.username  # Guardar el nombre de usuario actual
+                                    CurrentUser.user_id = user_id  # Guardar el user_id actual
                                     return MenuScreen(self.screen)  # Transición al menú
                                 else:
                                     self.error_message = "Registration failed."
