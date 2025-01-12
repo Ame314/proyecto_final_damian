@@ -1,6 +1,7 @@
 import pygame
 from src.scenes.login import LoginScreen
 from src.scenes.menu import MenuScreen
+#from src.scenes.progres import MenuScreen
 from src.scenes.level import Level
 from src.scenes.level2 import Level2
 from src.scenes.level3 import Level3
@@ -68,6 +69,7 @@ level = load_level(selected_level)
 coin_count = 0
 heart_count = 3
 points_count = 0
+enemigos_derrotados = 0
 ninja_hit_time = 0
 victory_once = False
 death_delay_duration = 1000
@@ -78,6 +80,10 @@ running = True
 victory_active = False
 game_over = False
 paused = False
+
+# Tiempo
+start_time = None  # Hora en la que el nivel empieza
+elapsed_time = 0  # Tiempo transcurrido
 
 # Función para pausar el juego
 def pause_menu():
@@ -113,6 +119,7 @@ running = True
 victory_active = False  # Estado de victoria
 game_over = False  
 
+start_time = pygame.time.get_ticks()
 # Bucle principal del juego
 while running:
     for event in pygame.event.get():
@@ -169,12 +176,21 @@ while running:
             victory_active = True
 
     if victory_active:
+        if start_time is None:  # Iniciar el temporizador al tocar el objeto de victoria
+            start_time = pygame.time.get_ticks()
+
+        elapsed_time = (pygame.time.get_ticks() - start_time) / 1000  # Tiempo en segundos
         screen.fill((0, 0, 0))
         font = pygame.font.Font(None, 36)
         text = font.render("¡Has ganado!", True, (0, 255, 0))
         screen.blit(text, (WIDTH // 2 - text.get_width() // 2, HEIGHT // 2 - 50))
+
+        # Mostrar tiempo transcurrido
+        time_text = font.render(f"Tiempo: {elapsed_time:.2f} segundos", True, (255, 255, 255))
+        screen.blit(time_text, (10, 10))
+
         pygame.display.flip()
-        pygame.time.wait(4000)  # Esperar 5 segundos
+        pygame.time.wait(4000)  # Esperar 4 segundos
         selected_level += 1
         if selected_level > 3:
             screen.fill((0, 0, 0))
@@ -182,13 +198,13 @@ while running:
             screen.blit(text, (WIDTH // 2 - text.get_width() // 2, HEIGHT // 2))
             pygame.display.flip()
             pygame.time.wait(3000)
-            running = False
+            
+
         else:
             level = load_level(selected_level)
             player = Player(player_initial_x, player_initial_y, player.sprite_paths)
             victory_active = False
         continue
-
 
     # Lógica de movimiento y animación
     if not game_over and not victory_active:
@@ -218,6 +234,8 @@ while running:
                 if player.is_attacking:
                     ninja.take_damage()
                     points_count += 20
+                    death_delay_active
+                    enemigos_derrotados += 1 
                 elif not player.is_dead and pygame.time.get_ticks() - ninja_hit_time > 1000:
                     heart_count -= 1
                     player.take_damage()
@@ -248,14 +266,21 @@ while running:
 
         for heart in level.hearts:
             screen.blit(heart.image, camera.apply(heart))
+        
+          # Mostrar el tiempo transcurrido
+        time_elapsed = (pygame.time.get_ticks() - start_time) / 1000  # Tiempo en segundos
+        time_text = pygame.font.Font(None, 36).render(f"Tiempo: {time_elapsed:.2f} s", True, (255, 255, 255))
+        screen.blit(time_text, (10, 10))  # Muestra el tiempo en la esquina superior izquierda
 
         font = pygame.font.Font(None, 36)
         coin_text = font.render(f'Monedas: {coin_count}', True, (255, 255, 255))
         heart_text = font.render(f'Vidas: {heart_count}', True, (255, 255, 255))
         points_text = font.render(f'Puntos:{points_count}',True, (255, 255, 255))
+        enemy_text = font.render(f'Enemigos eliminados:{enemigos_derrotados /3}',True, (255, 255, 255))
         screen.blit(coin_text, (WIDTH - coin_text.get_width() - 10, 10))
         screen.blit(heart_text, (WIDTH - heart_text.get_width() - 10, 50))
         screen.blit(points_text, (WIDTH - points_text.get_width() - 10, 80))
+        screen.blit(enemy_text, (WIDTH - enemy_text.get_width() - 10, 100))
 
     pygame.display.flip()
     clock.tick(60)
