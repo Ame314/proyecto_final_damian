@@ -67,6 +67,7 @@ level = load_level(selected_level)
 # Inicialización de variables
 coin_count = 0
 heart_count = 3
+points_count = 0
 ninja_hit_time = 0
 victory_once = False
 death_delay_duration = 1000
@@ -150,6 +151,7 @@ while running:
                     game_over = False
                     heart_count = 3
                     coin_count = 0
+                    points_count = 0
                     player = Player(player_initial_x, player_initial_y, player.sprite_paths)
                     level = load_level(selected_level)
                 elif event.key == pygame.K_m:
@@ -172,7 +174,7 @@ while running:
         text = font.render("¡Has ganado!", True, (0, 255, 0))
         screen.blit(text, (WIDTH // 2 - text.get_width() // 2, HEIGHT // 2 - 50))
         pygame.display.flip()
-        pygame.time.wait(5000)  # Esperar 5 segundos
+        pygame.time.wait(4000)  # Esperar 5 segundos
         selected_level += 1
         if selected_level > 3:
             screen.fill((0, 0, 0))
@@ -215,6 +217,7 @@ while running:
             if pygame.sprite.collide_rect(player, ninja):
                 if player.is_attacking:
                     ninja.take_damage()
+                    points_count += 20
                 elif not player.is_dead and pygame.time.get_ticks() - ninja_hit_time > 1000:
                     heart_count -= 1
                     player.take_damage()
@@ -227,10 +230,12 @@ while running:
 
         collected_coins = pygame.sprite.spritecollide(player, level.coins, True)
         coin_count += len(collected_coins)
+        points_count += len(collected_coins)*20
 
         for heart in level.hearts:
             if pygame.sprite.collide_rect(player, heart):
                 heart_count += 1
+                points_count += 10
                 heart.kill()
 
         screen.fill((135, 206, 250))
@@ -247,8 +252,10 @@ while running:
         font = pygame.font.Font(None, 36)
         coin_text = font.render(f'Monedas: {coin_count}', True, (255, 255, 255))
         heart_text = font.render(f'Vidas: {heart_count}', True, (255, 255, 255))
+        points_text = font.render(f'Puntos:{points_count}',True, (255, 255, 255))
         screen.blit(coin_text, (WIDTH - coin_text.get_width() - 10, 10))
         screen.blit(heart_text, (WIDTH - heart_text.get_width() - 10, 50))
+        screen.blit(points_text, (WIDTH - points_text.get_width() - 10, 80))
 
     pygame.display.flip()
     clock.tick(60)

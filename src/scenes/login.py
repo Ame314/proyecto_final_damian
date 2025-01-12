@@ -1,4 +1,5 @@
 import pygame
+import bcrypt  # Librería para manejar contraseñas
 import mysql.connector
 from mysql.connector import Error
 from src.scenes.menu import MenuScreen  # Importa la pantalla del menú
@@ -7,59 +8,69 @@ class LoginScreen:
     def __init__(self, screen):
         self.screen = screen
         self.font = pygame.font.Font(None, 36)
+        self.title_font = pygame.font.Font(None, 60)  # Título más grande
         self.username = ""
-        self.email = ""
         self.password = ""
-        self.input_active = False
-        self.current_input = 'email'  # Alternar entre email y password
+        self.current_input = 'username'  # Alternar entre username y password
         self.clock = pygame.time.Clock()
 
         # Definir los rectángulos donde se va a escribir el texto
-        self.username_rect = pygame.Rect(50, 100, 300, 40)  # Campo de nombre de usuario
-        self.email_rect = pygame.Rect(50, 150, 300, 40)  # Campo de email
-        self.password_rect = pygame.Rect(50, 200, 300, 40)  # Campo de contraseña
+        self.username_rect = pygame.Rect(50, 150, 300, 40)
+        self.password_rect = pygame.Rect(50, 250, 300, 40)
         self.cursor_timer = 0  # Para controlar el parpadeo del cursor
         self.error_message = ""  # Mensaje de error
 
-        # Botón para ir al menú
-        self.menu_button_rect = pygame.Rect(50, 300, 200, 50)
-        self.menu_button_text = self.font.render("Go to Menu", True, (255, 255, 255))
-
     def create_connection(self):
         """Crear una conexión a la base de datos."""
-        connection = None
         try:
             connection = mysql.connector.connect(
-                host='172.17.0.4',  # Cambia la IP o host según tu configuración
+                host='172.17.0.5',  # Cambia la IP o host según tu configuración
                 user='root',
                 password='rootpassword',
                 database='game_db'
             )
+            return connection
         except Error as e:
             print(f"The error '{e}' occurred")
-        return connection
+            return None
 
-    def login_user(self, email, password):
+    def user_exists(self, username):
         """Verifica si el usuario existe en la base de datos."""
         connection = self.create_connection()
         if connection:
             cursor = connection.cursor()
-            cursor.execute("SELECT * FROM users WHERE email = %s AND password = %s", (email, password))
+            query = "SELECT nombre_usuario FROM usuarios WHERE nombre_usuario = %s"
+            cursor.execute(query, (username,))
             user = cursor.fetchone()
             cursor.close()
             connection.close()
-            return user
-        return None
+            return user is not None
+        return False
 
-    def register_user(self, username, email, password):
+    def login_user(self, username, password):
+        """Verifica si el usuario existe y si la contraseña coincide."""
+        connection = self.create_connection()
+        if connection:
+            cursor = connection.cursor()
+            query = "SELECT contrasena FROM usuarios WHERE nombre_usuario = %s"
+            cursor.execute(query, (username,))
+            user = cursor.fetchone()
+            cursor.close()
+            connection.close()
+
+            if user and bcrypt.checkpw(password.encode('utf-8'), user[0].encode('utf-8')):
+                return True
+        return False
+
+    def register_user(self, username, password):
         """Registra un nuevo usuario en la base de datos."""
         connection = self.create_connection()
         if connection:
             cursor = connection.cursor()
             try:
-                cursor.execute("INSERT INTO users (username, email, password) VALUES (%s, %s, %s)", (username, email, password))
+                hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+                cursor.execute("INSERT INTO usuarios (nombre_usuario, contrasena) VALUES (%s, %s)", (username, hashed_password))
                 connection.commit()
-                print(f"User {username} registered successfully!")
                 return True
             except Error as e:
                 print(f"The error '{e}' occurred")
@@ -72,6 +83,9 @@ class LoginScreen:
         running = True
         while running:
             self.error_message = ""  # Resetear mensaje de error cada ciclo
+            self.cursor_timer += 1
+            if self.cursor_timer >= 30:
+                self.cursor_timer = 0
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -79,99 +93,77 @@ class LoginScreen:
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_TAB:
                         # Cambiar entre los campos de entrada
-                        if self.current_input == 'email':
-                            self.current_input = 'password'
+                        self.current_input = 'password' if self.current_input == 'username' else 'username'
+
+                    elif event.key == pygame.K_RETURN:
+                        if self.username == "" or self.password == "":
+                            self.error_message = "Both fields must be filled!"
+                        else:
+                            if self.user_exists(self.username):
+                                # Si el usuario existe, verificamos la contraseña
+                                if self.login_user(self.username, self.password):
+                                    print(f"Login successful! Welcome, {self.username}")
+                                    return MenuScreen(self.screen)  # Transición al menú
+                                else:
+                                    self.error_message = "Incorrect password!"
+                            else:
+                                # Si el usuario no existe, registramos el usuario
+                                print(f"Usuario no encontrado, registrando: {self.username}")
+                                if self.register_user(self.username, self.password):
+                                    print("Registration successful!")
+                                    return MenuScreen(self.screen)  # Transición al menú
+                                else:
+                                    self.error_message = "Registration failed."
+
+                    elif event.key == pygame.K_BACKSPACE:
+                        if self.current_input == 'username':
+                            self.username = self.username[:-1]
                         elif self.current_input == 'password':
-                            self.current_input = 'username'
-                        else:
-                            self.current_input = 'email'
-                        self.input_active = True  # Activar el campo de entrada
+                            self.password = self.password[:-1]
+                    else:
+                        if self.current_input == 'username':
+                            self.username += event.unicode
+                        elif self.current_input == 'password':
+                            self.password += event.unicode
 
-                    if self.input_active:
-                        if event.key == pygame.K_RETURN:
-                            if self.email == "" or self.password == "" or self.username == "":
-                                self.error_message = "All fields must be filled!"  # Mostrar error si falta información
-                            elif self.current_input == 'email':
-                                # Intentar hacer login
-                                user = self.login_user(self.email, self.password)
-                                if user:
-                                    print(f"Login successful! Welcome, {user[1]}")  # Asumiendo que user[1] es el username
-                                    return MenuScreen(self.screen)  # Transición al menú si el login es exitoso
-                                else:
-                                    self.error_message = "Login failed. Please check your credentials."  # Error de login
-                            elif self.current_input == 'username':
-                                # Intentar registrar usuario
-                                if self.register_user(self.username, self.email, self.password):
-                                    print("Registration successful! You can now log in.")
-                                else:
-                                    self.error_message = "Registration failed. Please try again."  # Error de registro
-                        elif event.key == pygame.K_BACKSPACE:
-                            if self.current_input == 'email':
-                                self.email = self.email[:-1]
-                            elif self.current_input == 'password':
-                                self.password = self.password[:-1]
-                            elif self.current_input == 'username':
-                                self.username = self.username[:-1]
-                        else:
-                            if self.current_input == 'email':
-                                self.email += event.unicode
-                            elif self.current_input == 'password':
-                                self.password += event.unicode  # Continuar escribiendo la contraseña
-                            elif self.current_input == 'username':
-                                self.username += event.unicode  # Continuar escribiendo el nombre de usuario
+            # Dibujar fondo degradado suave
+            self.screen.fill((173, 216, 230))  # Fondo celeste suave
 
-                # Detectar clic en el botón "Ir al menú"
-                if event.type == pygame.MOUSEBUTTONDOWN:
-                    if self.menu_button_rect.collidepoint(event.pos):
-                        return MenuScreen(self.screen)  # Transición al menú cuando se hace clic en el botón
+            # Título centralizado
+            title_text = self.title_font.render("Login / Registro", True, (0, 0, 128))
+            self.screen.blit(title_text, (self.screen.get_width() // 2 - title_text.get_width() // 2, 50))
 
-            # Dibujar fondo
-            self.screen.fill((135, 206, 250))  # Fondo azul cielo
+            # Dibujar los campos de texto con bordes redondeados
+            pygame.draw.rect(self.screen, (255, 255, 255), self.username_rect, border_radius=10)
+            pygame.draw.rect(self.screen, (255, 255, 255), self.password_rect, border_radius=10)
+            pygame.draw.rect(self.screen, (0, 0, 0), self.username_rect, 2, border_radius=10)
+            pygame.draw.rect(self.screen, (0, 0, 0), self.password_rect, 2, border_radius=10)
 
-            # Fondo de los campos de entrada
-            pygame.draw.rect(self.screen, (255, 255, 255), self.username_rect)
-            pygame.draw.rect(self.screen, (255, 255, 255), self.email_rect)
-            pygame.draw.rect(self.screen, (255, 255, 255), self.password_rect)
+            # Etiquetas de los campos
+            username_label = self.font.render("Usuario:", True, (0, 0, 0))
+            password_label = self.font.render("Contraseña:", True, (0, 0, 0))
+            self.screen.blit(username_label, (self.username_rect.x, self.username_rect.y - 40))
+            self.screen.blit(password_label, (self.password_rect.x, self.password_rect.y - 40))
 
-            # Dibujar los bordes de los campos de texto
-            pygame.draw.rect(self.screen, (0, 0, 0), self.username_rect, 2)
-            pygame.draw.rect(self.screen, (0, 0, 0), self.email_rect, 2)
-            pygame.draw.rect(self.screen, (0, 0, 0), self.password_rect, 2)
-
-            # Dibujar texto de entrada
+            # Dibujar el texto ingresado
             username_text = self.font.render(self.username, True, (0, 0, 0))
-            email_text = self.font.render(self.email, True, (0, 0, 0))
             password_text = self.font.render("*" * len(self.password), True, (0, 0, 0))
-
-            # Posicionar el texto dentro de los rectángulos
             self.screen.blit(username_text, (self.username_rect.x + 5, self.username_rect.y + 5))
-            self.screen.blit(email_text, (self.email_rect.x + 5, self.email_rect.y + 5))
             self.screen.blit(password_text, (self.password_rect.x + 5, self.password_rect.y + 5))
 
-            # Títulos de los campos
-            username_label = self.font.render("Username:", True, (0, 0, 0))
-            email_label = self.font.render("Email:", True, (0, 0, 0))
-            password_label = self.font.render("Password:", True, (0, 0, 0))
-            self.screen.blit(username_label, (50, 70))
-            self.screen.blit(email_label, (50, 120))
-            self.screen.blit(password_label, (50, 170))
+            # Agregar cursor parpadeante
+            if self.current_input == 'username' and self.cursor_timer < 15:
+                pygame.draw.line(self.screen, (0, 0, 0), (self.username_rect.x + 5 + username_text.get_width(), self.username_rect.y + 5), (self.username_rect.x + 5 + username_text.get_width(), self.username_rect.y + 35), 2)
+            elif self.current_input == 'password' and self.cursor_timer < 15:
+                pygame.draw.line(self.screen, (0, 0, 0), (self.password_rect.x + 5 + password_text.get_width(), self.password_rect.y + 5), (self.password_rect.x + 5 + password_text.get_width(), self.password_rect.y + 35), 2)
 
-            # Mensaje de error
+            # Mostrar mensaje de error con fondo suave
             if self.error_message:
+                error_background = pygame.Surface((self.screen.get_width(), 40))
+                error_background.fill((255, 204, 204))  # Fondo rojo suave
+                self.screen.blit(error_background, (0, 350))
                 error_text = self.font.render(self.error_message, True, (255, 0, 0))
-                self.screen.blit(error_text, (50, 250))  # Mostrar mensaje de error debajo de los campos
-
-            # Botón para ir al menú
-            pygame.draw.rect(self.screen, (0, 0, 255), self.menu_button_rect)  # Botón azul
-            self.screen.blit(self.menu_button_text, (self.menu_button_rect.x + 50, self.menu_button_rect.y + 10))  # Texto blanco
-
-            # Agregar el cursor parpadeante
-            if self.input_active:
-                self.cursor_timer += 1
-                if self.cursor_timer % 30 == 0:  # Cambiar la velocidad del parpadeo del cursor
-                    cursor_position = self.username_rect if self.current_input == 'username' else self.email_rect if self.current_input == 'email' else self.password_rect
-                    cursor_x = cursor_position.x + 5 + self.font.size(self.username if self.current_input == 'username' else self.email if self.current_input == 'email' else "*" * len(self.password))[0]
-                    pygame.draw.line(self.screen, (0, 0, 0), (cursor_x, cursor_position.y + 5), (cursor_x, cursor_position.y + 35), 2)
+                self.screen.blit(error_text, (50, 355))
 
             pygame.display.flip()
             self.clock.tick(60)

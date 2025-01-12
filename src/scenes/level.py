@@ -61,7 +61,8 @@ class Level:
             self.ninjas.add(ninja)
 
     def create_hearts(self):
-        heart_positions = [(300, self.height - 150), (800, self.height - 250), (1200, self.height - 180)]  # Posiciones de los corazones
+        heart_positions = [(300, self.height - 150), 
+        (800, self.height - 250), (1200, self.height - 180)]  # Posiciones de los corazones
         heart_images = [pygame.transform.scale(pygame.image.load(f'assets/images/heart_frame_{i}.png').convert_alpha(), (30, 30)) for i in range(3)]
         for pos in heart_positions:
             heart = Heart(pos[0], pos[1], heart_images)
